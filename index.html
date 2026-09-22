@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="CCL Learning Hub">
+<title>CCL Quality Learning Hub</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#18212b;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:#193e6b;color:white;padding:20px 22px}header h1{font-size:21px;margin:0}.sub{font-size:14px;opacity:.85}
+main{max-width:1050px;margin:auto;padding:14px}.panel,.card{background:white;border:1px solid #d5dde6;border-radius:16px;padding:14px;margin-bottom:12px}
+.notice{background:#edf7ef}textarea,input,select,button{font:inherit}textarea,input,select{width:100%;border:1px solid #c9d3df;border-radius:11px;padding:11px;background:white}
+button{min-height:46px;border:1px solid #c9d3df;border-radius:11px;background:white;padding:9px 12px;color:#0784ff}.primary{background:#193e6b;color:white}
+.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1;min-width:150px}.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:12px 0}.tabs button.active{background:#dce9f7}
+.toolbar{display:grid;grid-template-columns:2fr 1fr;gap:8px}.tools{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.badge{display:inline-block;background:#edf1f4;color:#66727d;border-radius:20px;padding:3px 8px;margin-right:4px;font-size:12px}
+.title{font-size:18px;font-weight:700;margin:7px 0}.detail{color:#566574;white-space:pre-wrap}.next{margin-top:8px;background:#f4f6f8;padding:8px;border-radius:8px}.actions{display:flex;gap:8px;margin-top:10px}.actions button{flex:1}
+#form{display:none}.small{font-size:13px;color:#687786}.empty{text-align:center;padding:25px;color:#687786}
+@media(max-width:700px){.tabs{grid-template-columns:repeat(3,1fr)}.toolbar{grid-template-columns:1fr}.tools{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><h1>CCL Quality Learning Hub</h1><div class="sub">Stable iPad local notebook</div></header>
+<main>
+<div class="panel notice"><b>🔒 Local-only mode</b><div class="small">Notes are stored in this Home Screen app/browser on this iPad. Use Backup regularly.</div></div>
+
+<div class="panel">
+<b>🎙️ Daily Capture</b><p class="small">Tap below and use iPad keyboard dictation.</p>
+<textarea id="dump" rows="7" placeholder="Today I learned… I met… I noticed…"></textarea>
+<div class="row" style="margin-top:8px"><button class="primary" id="organizeBtn">Organize Notes</button><button id="addBtn">+ Add Manually</button></div>
+</div>
+
+<div id="tabs" class="tabs"></div>
+
+<div class="panel">
+<div class="toolbar"><input id="search" placeholder="Search Avery, PFMEA, Kwan…"><select id="priority"><option value="">All priorities</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+<div class="tools"><button id="backupBtn">⬇ Backup</button><button id="restoreBtn">⬆ Restore</button><button id="csvBtn">Export CSV</button></div>
+<input hidden type="file" id="fileInput" accept=".json,application/json">
+</div>
+
+<div id="form" class="panel">
+<b id="formTitle">Add Entry</b>
+<input type="hidden" id="editId">
+<div class="row" style="margin-top:8px">
+<select id="type"><option>People</option><option>Learn</option><option>Action</option><option>Idea</option></select>
+<select id="entryPriority"><option>High</option><option selected>Medium</option><option>Low</option></select>
+<select id="status"><option>Captured</option><option>Verify</option><option>Open</option><option>Study</option><option>Closed</option></select>
+</div>
+<input id="title" placeholder="Title" style="margin-top:8px">
+<textarea id="detail" rows="3" placeholder="Details / what I learned" style="margin-top:8px"></textarea>
+<input id="next" placeholder="Next action / follow-up" style="margin-top:8px">
+<div class="row" style="margin-top:8px"><button class="primary" id="saveBtn">Save Entry</button><button id="cancelBtn">Cancel</button></div>
+</div>
+
+<div id="list"></div>
+</main>
+
+<script>
+(function(){
+"use strict";
+var KEY="ccl_hub_local_v1";
+var seed=[
+{id:"s1",type:"People",priority:"Medium",status:"Verify",date:"First week",title:"KOB — QA Manager",detail:"Food & Beverage QA Manager; currently supporting BTS/Tobacco.",next:"Confirm future scope/responsibility split."},
+{id:"s2",type:"People",priority:"Medium",status:"Captured",date:"First week",title:"Khao — Incoming QA",detail:"Incoming raw-material QA including tobacco.",next:"Learn incoming inspection workflow."},
+{id:"s3",type:"People",priority:"Low",status:"Captured",date:"First week",title:"Kwan — Graphics",detail:"Graphics contact for BKS.",next:"Map Graphics interaction with Technical and QA."},
+{id:"s4",type:"People",priority:"Low",status:"Captured",date:"First week",title:"Gol — Assistant Manager, Graphics",detail:"Assistant Manager for Graphics.",next:"Confirm responsibilities."},
+{id:"s5",type:"People",priority:"Medium",status:"Verify",date:"First week",title:"Technical Team",detail:"Priya, Min, Prao, Thun, Jam, Pei Pei and Tong.",next:"Capture individual roles."},
+{id:"s6",type:"People",priority:"High",status:"Verify",date:"First week",title:"Rakheet — Tobacco Business",detail:"Senior tobacco business contact; exact title/spelling to verify.",next:"Prepare for Oct 2 meeting, 11:00–12:00."},
+{id:"s7",type:"Learn",priority:"Medium",status:"Verify",date:"First week",title:"SmartDocs / eSmart Document Control",detail:"ISO/QMS document-control system. QW=Work Instruction, QP=Procedure, QF=Form; QWC/QPC common across Quality. Other code conventions need verification.",next:"Confirm exact system name and document coding."},
+{id:"s8",type:"Learn",priority:"High",status:"Captured",date:"First week",title:"PSS / LSD",detail:"Print Standard Sample / Light-Standard-Dark approved by customer before commercial run.",next:"Map approval, master/reference control, retention and production/QC use."},
+{id:"s9",type:"Learn",priority:"High",status:"Verify",date:"First week",title:"Factory-order production flow",detail:"Factory order → BOM/material/tooling preparation → line clearance → setup → production → in-process inspection → final inspection → QA/system release → retention/documentation.",next:"Verify actual flow and meaning of 'blocking'."},
+{id:"s10",type:"Learn",priority:"High",status:"Verify",date:"First week",title:"Manual vs Auto Label",detail:"Different constructions and QC/QA tests. Auto label includes face stock, adhesive, liner/back silicone and inline coating elements; terminology needs verification.",next:"Build construction-to-test control matrix."},
+{id:"s11",type:"Learn",priority:"High",status:"Study",date:"First week",title:"Camera inspection",detail:"100% camera inspection plus QC sampling because camera does not capture everything. Auto label reportedly uses two cameras.",next:"Study defect thresholds, validation, sampling rationale and false accept/reject."},
+{id:"s12",type:"Learn",priority:"Medium",status:"Captured",date:"First week",title:"Printing technologies",detail:"Flexo, offset, silk screen and gravure. Gravure reported outsourced; die-cut outsourcing/status needs verification.",next:"Map processes, machines and outsourced suppliers."},
+{id:"s13",type:"Learn",priority:"High",status:"Verify",date:"First week",title:"Incoming direct materials",detail:"Incoming QA handles face stock/substrate, stamping foil and back silicone liner. Ink and tooling are direct materials but reportedly handled by Production.",next:"Confirm material classification and ownership."},
+{id:"s14",type:"Learn",priority:"High",status:"Study",date:"First week",title:"Corona / dyne / surface tension",detail:"Corona-treated face-stock side and dyne testing were discussed; issue reportedly occurring across business units.",next:"Review substrate specs, dyne method, treatment decay, storage and observed defects."},
+{id:"s15",type:"Learn",priority:"High",status:"Verify",date:"First week",title:"RM qualification — first three lots",detail:"New supplier/material qualification reportedly monitors first three different lots, tagged under review/monitoring.",next:"Verify whether qualification is supplier, material or supplier-material-site/application based."},
+{id:"s16",type:"Learn",priority:"High",status:"Study",date:"First week",title:"Specification hierarchy",detail:"Customer requirements → Technical compatibility → supplier/master/individual specifications → incoming tests and controls.",next:"Map source of truth for each specification level."},
+{id:"s17",type:"Action",priority:"High",status:"Open",date:"First week",title:"Review Avery evidence",detail:"Recent substrate issues with critical supplier Avery.",next:"Compare supplier COA → incoming test → RM Inspection Log → production issue → Smart QA rejection → supplier response/CAPA."},
+{id:"s18",type:"Action",priority:"High",status:"Open",date:"First week",title:"Create Quality Source-of-Truth Map",detail:"Map defect catalogs, RM specs, control plans, supplier specs, TDS, SOP/WI/Form, COA, inspection log, Smart QA, BTS drive and PSS/LSD.",next:"Create 'If I need X, where do I look?' reference."},
+{id:"s19",type:"Action",priority:"High",status:"Open",date:"First week",title:"Review PFMEA governance",detail:"PFMEA appears used sparingly; current trigger/ownership/governance not yet understood.",next:"Review SOP, templates and examples before concluding a gap."},
+{id:"s20",type:"Action",priority:"High",status:"Open",date:"First week",title:"Review plant-transfer qualification",detail:"Need to understand risk/qualification package for plant-to-plant transfer, including Switzerland-to-Bangkok example.",next:"Obtain transfer procedure and actual transfer package."},
+{id:"s21",type:"Action",priority:"Medium",status:"Open",date:"First week",title:"HR Collaboration access",detail:"Need HR Collaboration link/access.",next:"Follow up with HR."},
+{id:"s22",type:"Action",priority:"High",status:"Open",date:"First week",title:"Prepare Rakheet meeting",detail:"Tobacco business introduction planned Oct 2, 11:00–12:00.",next:"Prepare questions on customers, products, quality expectations and priorities."},
+{id:"s23",type:"Idea",priority:"Medium",status:"Study",date:"First week",title:"Supplier Risk & Continuity Scorecard",detail:"Potential risk-based supplier monitoring using material criticality, rejection history, recurrence, detectability, impact and alternate-source availability.",next:"Understand current supplier scorecard before proposing changes."},
+{id:"s24",type:"Idea",priority:"High",status:"Study",date:"First week",title:"Risk-Based NPD / Technical Qualification Framework",detail:"Potential framework linking qualification, PFMEA/risk assessment, specifications and controls.",next:"Review existing NPD and technical qualification governance."}
+];
+var data=[],view="All";
+try{var stored=localStorage.getItem(KEY);data=stored?JSON.parse(stored):seed.slice();if(!Array.isArray(data))data=seed.slice()}catch(err){data=seed.slice()}
+save();
+
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function esc(v){return String(v||"").replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function counts(t){return t==="All"?data.length:data.filter(function(x){return x.type===t}).length}
+function render(){
+ var ts=["All","People","Learn","Action","Idea"];
+ document.getElementById("tabs").innerHTML=ts.map(function(t){return '<button data-tab="'+t+'" class="'+(view===t?"active":"")+'">'+t+'<br><b>'+counts(t)+'</b></button>'}).join("");
+ Array.prototype.forEach.call(document.querySelectorAll("[data-tab]"),function(b){b.onclick=function(){view=this.getAttribute("data-tab");render()}});
+ var q=document.getElementById("search").value.toLowerCase(),p=document.getElementById("priority").value;
+ var a=data.filter(function(x){return (view==="All"||x.type===view)&&(!p||x.priority===p)&&(!q||JSON.stringify(x).toLowerCase().indexOf(q)>=0)});
+ document.getElementById("list").innerHTML=a.length?a.map(card).join(""):'<div class="panel empty">No entries found.</div>';
+ Array.prototype.forEach.call(document.querySelectorAll("[data-edit]"),function(b){b.onclick=function(){edit(this.getAttribute("data-edit"))}});
+ Array.prototype.forEach.call(document.querySelectorAll("[data-del]"),function(b){b.onclick=function(){removeOne(this.getAttribute("data-del"))}});
+}
+function card(x){return '<div class="card"><div><span class="badge">'+esc(x.type)+'</span><span class="badge">'+esc(x.priority)+'</span><span class="badge">'+esc(x.status)+'</span> <span class="small">'+esc(x.date)+'</span></div><div class="title">'+esc(x.title)+'</div><div class="detail">'+esc(x.detail)+'</div>'+(x.next?'<div class="next"><b>Next:</b> '+esc(x.next)+'</div>':'')+'<div class="actions"><button data-edit="'+esc(x.id)+'">Edit</button><button data-del="'+esc(x.id)+'">Delete</button></div></div>'}
+function openForm(){document.getElementById("form").style.display="block";document.getElementById("form").scrollIntoView({behavior:"smooth"})}
+function clearForm(){["editId","title","detail","next"].forEach(function(id){document.getElementById(id).value=""});document.getElementById("type").value="Learn";document.getElementById("entryPriority").value="Medium";document.getElementById("status").value="Captured";document.getElementById("formTitle").textContent="Add Entry"}
+function add(){clearForm();openForm()}
+function edit(id){var x=data.find(function(y){return String(y.id)===String(id)});if(!x)return;document.getElementById("editId").value=x.id;document.getElementById("type").value=x.type;document.getElementById("entryPriority").value=x.priority;document.getElementById("status").value=x.status;document.getElementById("title").value=x.title;document.getElementById("detail").value=x.detail||"";document.getElementById("next").value=x.next||"";document.getElementById("formTitle").textContent="Edit Entry";openForm()}
+function saveEntry(){var id=document.getElementById("editId").value,obj={id:id||String(Date.now()),type:document.getElementById("type").value,priority:document.getElementById("entryPriority").value,status:document.getElementById("status").value,date:new Date().toISOString().slice(0,10),title:document.getElementById("title").value.trim()||"Untitled",detail:document.getElementById("detail").value.trim(),next:document.getElementById("next").value.trim()};if(id){var n=data.findIndex(function(x){return String(x.id)===String(id)});if(n>=0){obj.date=data[n].date||obj.date;data[n]=obj}}else data.unshift(obj);save();document.getElementById("form").style.display="none";clearForm();render()}
+function removeOne(id){if(confirm("Delete this entry?")){data=data.filter(function(x){return String(x.id)!==String(id)});save();render()}}
+function classify(s){var z=s.toLowerCase();if(z.indexOf("met ")>=0||z.indexOf("manager")>=0||z.indexOf("staff")>=0)return"People";if(z.indexOf("need to")>=0||z.indexOf("follow up")>=0||z.indexOf("confirm")>=0)return"Action";if(z.indexOf("idea")>=0||z.indexOf("improv")>=0||z.indexOf("project")>=0)return"Idea";return"Learn"}
+function organize(){var raw=document.getElementById("dump").value.trim();if(!raw){alert("Type or dictate notes first.");return}var parts=raw.split(/\n+/).map(function(s){return s.trim()}).filter(Boolean),d=new Date().toISOString().slice(0,10);parts.forEach(function(s,i){data.unshift({id:String(Date.now()+i),type:classify(s),priority:"Medium",status:"Captured",date:d,title:s,detail:"",next:"Review and add follow-up if needed."})});save();document.getElementById("dump").value="";render()}
+function download(name,text,type){var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:type}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
+function backup(){download("CCL_Hub_Backup_"+new Date().toISOString().slice(0,10)+".json",JSON.stringify(data,null,2),"application/json")}
+function restoreFile(file){var r=new FileReader();r.onload=function(){try{var x=JSON.parse(r.result);if(!Array.isArray(x))throw new Error();if(confirm("Replace current records with "+x.length+" backup records?")){data=x;save();render();alert("Restore complete.")}}catch(e){alert("Invalid backup file.")}};r.readAsText(file)}
+function exportCsv(){var rows=[["Date","Type","Priority","Status","Title","Detail","Next"]].concat(data.map(function(x){return[x.date,x.type,x.priority,x.status,x.title,x.detail,x.next]}));download("CCL_Hub.csv","\ufeff"+rows.map(function(r){return r.map(function(v){return '"'+String(v||"").replace(/"/g,'""')+'"'}).join(",")}).join("\n"),"text/csv")}
+document.getElementById("addBtn").onclick=add;document.getElementById("organizeBtn").onclick=organize;document.getElementById("saveBtn").onclick=saveEntry;document.getElementById("cancelBtn").onclick=function(){document.getElementById("form").style.display="none"};document.getElementById("search").oninput=render;document.getElementById("priority").onchange=render;document.getElementById("backupBtn").onclick=backup;document.getElementById("restoreBtn").onclick=function(){document.getElementById("fileInput").click()};document.getElementById("fileInput").onchange=function(){if(this.files&&this.files[0])restoreFile(this.files[0]);this.value=""};document.getElementById("csvBtn").onclick=exportCsv;
+render();
+})();
+</script>
+</body></html>
